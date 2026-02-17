@@ -3,7 +3,7 @@
 import base64
 import ipaddress
 import logging
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from sendparcel.enums import ConfirmationMethod
 from sendparcel.exceptions import InvalidCallbackError
@@ -36,6 +36,40 @@ class InPostCourierProvider(BaseProvider):
     ]
     confirmation_method: ClassVar[ConfirmationMethod] = ConfirmationMethod.PUSH
     user_selectable: ClassVar[bool] = True
+    config_schema: ClassVar[dict[str, Any]] = {
+        "token": {
+            "type": "str",
+            "required": True,
+            "secret": True,
+            "description": "ShipX API bearer token",
+        },
+        "organization_id": {
+            "type": "int",
+            "required": True,
+            "secret": False,
+            "description": "ShipX organization ID",
+        },
+        "sandbox": {
+            "type": "bool",
+            "required": False,
+            "secret": False,
+            "description": "Use sandbox environment",
+            "default": False,
+        },
+        "base_url": {
+            "type": "str",
+            "required": False,
+            "secret": False,
+            "description": "Custom API base URL (overrides sandbox flag)",
+        },
+        "timeout": {
+            "type": "float",
+            "required": False,
+            "secret": False,
+            "description": "HTTP request timeout in seconds",
+            "default": 30.0,
+        },
+    }
 
     def _get_client(self) -> ShipXClient:
         """Build a ShipXClient from provider config."""
