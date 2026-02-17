@@ -2,53 +2,45 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from sendparcel.enums import ConfirmationMethod, ShipmentStatus
+from sendparcel.exceptions import InvalidCallbackError
 from sendparcel.types import AddressInfo, ParcelInfo
 
+from sendparcel_inpost.exceptions import ShipXAPIError
 from sendparcel_inpost.providers.locker import InPostLockerProvider
 
+SENDER_ADDRESS: AddressInfo = {
+    "first_name": "Jan",
+    "last_name": "Nadawca",
+    "phone": "500100200",
+    "email": "sender@example.com",
+    "street": "Nadawcza",
+    "building_number": "1",
+    "city": "Warszawa",
+    "postal_code": "00-001",
+    "country_code": "PL",
+}
 
-@dataclass
-class _FakeOrder:
-    weight: Decimal = Decimal("1.0")
+RECEIVER_ADDRESS: AddressInfo = {
+    "first_name": "Anna",
+    "last_name": "Odbiorca",
+    "phone": "600200300",
+    "email": "receiver@example.com",
+}
 
-    def get_total_weight(self) -> Decimal:
-        return self.weight
-
-    def get_parcels(self) -> list[ParcelInfo]:
-        return [ParcelInfo(weight_kg=self.weight)]
-
-    def get_sender_address(self) -> AddressInfo:
-        return {
-            "first_name": "Jan",
-            "last_name": "Nadawca",
-            "phone": "500100200",
-            "email": "sender@example.com",
-            "street": "Nadawcza",
-            "building_number": "1",
-            "city": "Warszawa",
-            "postal_code": "00-001",
-            "country_code": "PL",
-        }
-
-    def get_receiver_address(self) -> AddressInfo:
-        return {
-            "first_name": "Anna",
-            "last_name": "Odbiorca",
-            "phone": "600200300",
-            "email": "receiver@example.com",
-        }
+PARCELS: list[ParcelInfo] = [
+    ParcelInfo(weight_kg=Decimal("1.0")),
+]
 
 
 @dataclass
 class _FakeShipment:
     id: str = "ship-1"
-    order: _FakeOrder = field(default_factory=_FakeOrder)
     status: str = "new"
     provider: str = "inpost_locker"
     external_id: str = ""
@@ -105,6 +97,9 @@ class TestLockerCreateShipment:
             mock_client.close = AsyncMock()
 
             result = await provider.create_shipment(
+                sender_address=SENDER_ADDRESS,
+                receiver_address=RECEIVER_ADDRESS,
+                parcels=PARCELS,
                 target_point="KRA010",
                 sending_method="dispatch_order",
             )
@@ -128,7 +123,11 @@ class TestLockerCreateShipment:
         }
         provider = InPostLockerProvider(shipment, config=config)
         with pytest.raises(ValueError, match="target_point"):
-            await provider.create_shipment()
+            await provider.create_shipment(
+                sender_address=SENDER_ADDRESS,
+                receiver_address=RECEIVER_ADDRESS,
+                parcels=PARCELS,
+            )
 
 
 class TestLockerCreateLabel:
@@ -208,8 +207,6 @@ class TestLockerCancelShipment:
         assert result is True
 
     async def test_returns_false_on_api_error(self) -> None:
-        from sendparcel_inpost.exceptions import ShipXAPIError
-
         shipment = _FakeShipment(external_id="999")
         config = {
             "token": "t",
@@ -247,8 +244,6 @@ class TestLockerVerifyCallback:
         )
 
     async def test_invalid_ip_raises(self) -> None:
-        from sendparcel.exceptions import InvalidCallbackError
-
         shipment = _FakeShipment()
         provider = InPostLockerProvider(shipment, config={})
         with pytest.raises(InvalidCallbackError):
@@ -258,8 +253,6 @@ class TestLockerVerifyCallback:
             )
 
     async def test_missing_ip_raises(self) -> None:
-        from sendparcel.exceptions import InvalidCallbackError
-
         shipment = _FakeShipment()
         provider = InPostLockerProvider(shipment, config={})
         with pytest.raises(InvalidCallbackError):

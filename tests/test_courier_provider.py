@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
@@ -11,56 +11,44 @@ from sendparcel.types import AddressInfo, ParcelInfo
 
 from sendparcel_inpost.providers.courier import InPostCourierProvider
 
+SENDER_ADDRESS: AddressInfo = {
+    "first_name": "Jan",
+    "last_name": "Nadawca",
+    "phone": "500100200",
+    "email": "sender@example.com",
+    "street": "Nadawcza",
+    "building_number": "1",
+    "city": "Warszawa",
+    "postal_code": "00-001",
+    "country_code": "PL",
+}
 
-@dataclass
-class _FakeOrder:
-    weight: Decimal = Decimal("2.5")
+RECEIVER_ADDRESS: AddressInfo = {
+    "first_name": "Anna",
+    "last_name": "Odbiorca",
+    "phone": "600200300",
+    "email": "receiver@example.com",
+    "street": "Odbiorcza",
+    "building_number": "5",
+    "flat_number": "10",
+    "city": "Krakow",
+    "postal_code": "30-001",
+    "country_code": "PL",
+}
 
-    def get_total_weight(self) -> Decimal:
-        return self.weight
-
-    def get_parcels(self) -> list[ParcelInfo]:
-        return [
-            {
-                "weight_kg": self.weight,
-                "length_cm": Decimal("30"),
-                "width_cm": Decimal("20"),
-                "height_cm": Decimal("15"),
-            },
-        ]
-
-    def get_sender_address(self) -> AddressInfo:
-        return {
-            "first_name": "Jan",
-            "last_name": "Nadawca",
-            "phone": "500100200",
-            "email": "sender@example.com",
-            "street": "Nadawcza",
-            "building_number": "1",
-            "city": "Warszawa",
-            "postal_code": "00-001",
-            "country_code": "PL",
-        }
-
-    def get_receiver_address(self) -> AddressInfo:
-        return {
-            "first_name": "Anna",
-            "last_name": "Odbiorca",
-            "phone": "600200300",
-            "email": "receiver@example.com",
-            "street": "Odbiorcza",
-            "building_number": "5",
-            "flat_number": "10",
-            "city": "Krakow",
-            "postal_code": "30-001",
-            "country_code": "PL",
-        }
+PARCELS: list[ParcelInfo] = [
+    {
+        "weight_kg": Decimal("2.5"),
+        "length_cm": Decimal("30"),
+        "width_cm": Decimal("20"),
+        "height_cm": Decimal("15"),
+    },
+]
 
 
 @dataclass
 class _FakeShipment:
     id: str = "ship-2"
-    order: _FakeOrder = field(default_factory=_FakeOrder)
     status: str = "new"
     provider: str = "inpost_courier"
     external_id: str = ""
@@ -117,7 +105,11 @@ class TestCourierCreateShipment:
             )
             mock_client.close = AsyncMock()
 
-            result = await provider.create_shipment()
+            result = await provider.create_shipment(
+                sender_address=SENDER_ADDRESS,
+                receiver_address=RECEIVER_ADDRESS,
+                parcels=PARCELS,
+            )
 
         assert result["external_id"] == "888"
         assert result["tracking_number"] == "TRACK888"
@@ -151,7 +143,11 @@ class TestCourierCreateShipment:
             )
             mock_client.close = AsyncMock()
 
-            await provider.create_shipment()
+            await provider.create_shipment(
+                sender_address=SENDER_ADDRESS,
+                receiver_address=RECEIVER_ADDRESS,
+                parcels=PARCELS,
+            )
 
         call_kwargs = mock_client.create_shipment.call_args
         payload = call_kwargs.kwargs["payload"]

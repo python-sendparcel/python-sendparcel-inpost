@@ -11,6 +11,7 @@ from sendparcel.provider import BaseProvider
 from sendparcel.types import (
     AddressInfo,
     LabelInfo,
+    ParcelInfo,
     ShipmentCreateResult,
     ShipmentStatusResponse,
 )
@@ -135,11 +136,10 @@ class InPostCourierProvider(BaseProvider):
 
         return peer
 
-    def _parcels_to_shipx(self) -> list[dict]:
-        """Convert order parcels to ShipX parcel dicts with dimensions."""
-        order_parcels = self.shipment.order.get_parcels()
+    def _parcels_to_shipx(self, parcels: list[ParcelInfo]) -> list[dict]:
+        """Convert parcels to ShipX parcel dicts with dimensions."""
         result = []
-        for parcel in order_parcels:
+        for parcel in parcels:
             shipx_parcel: dict = {}
 
             length = parcel.get("length_cm")
@@ -164,19 +164,24 @@ class InPostCourierProvider(BaseProvider):
 
         return result or [{"weight": {"amount": 1.0, "unit": "kg"}}]
 
-    async def create_shipment(self, **kwargs) -> ShipmentCreateResult:
+    async def create_shipment(
+        self,
+        *,
+        sender_address: AddressInfo,
+        receiver_address: AddressInfo,
+        parcels: list[ParcelInfo],
+        **kwargs,
+    ) -> ShipmentCreateResult:
         """Create an InPost courier shipment."""
-        receiver_addr = self.shipment.order.get_receiver_address()
-        receiver_peer = self._address_to_peer(receiver_addr)
+        receiver_peer = self._address_to_peer(receiver_address)
 
         payload: dict = {
             "receiver": dict(receiver_peer),
-            "parcels": self._parcels_to_shipx(),
+            "parcels": self._parcels_to_shipx(parcels),
             "service": "inpost_courier_standard",
         }
 
-        sender_addr = self.shipment.order.get_sender_address()
-        sender_peer = self._address_to_peer(sender_addr)
+        sender_peer = self._address_to_peer(sender_address)
         if sender_peer:
             payload["sender"] = dict(sender_peer)
 

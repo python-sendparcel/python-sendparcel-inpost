@@ -11,6 +11,7 @@ from sendparcel.provider import BaseProvider
 from sendparcel.types import (
     AddressInfo,
     LabelInfo,
+    ParcelInfo,
     ShipmentCreateResult,
     ShipmentStatusResponse,
 )
@@ -135,13 +136,12 @@ class InPostLockerProvider(BaseProvider):
 
         return peer
 
-    def _parcel_template_from_parcels(self) -> str:
-        """Determine locker parcel template from order parcels.
+    def _parcel_template_from_parcels(self, parcels: list[ParcelInfo]) -> str:
+        """Determine locker parcel template from parcels.
 
         For locker shipments, defaults to 'small' if dimensions
         don't clearly indicate a larger size.
         """
-        parcels = self.shipment.order.get_parcels()
         if not parcels:
             return "small"
 
@@ -154,7 +154,14 @@ class InPostLockerProvider(BaseProvider):
             return "medium"
         return "small"
 
-    async def create_shipment(self, **kwargs) -> ShipmentCreateResult:
+    async def create_shipment(
+        self,
+        *,
+        sender_address: AddressInfo,
+        receiver_address: AddressInfo,
+        parcels: list[ParcelInfo],
+        **kwargs,
+    ) -> ShipmentCreateResult:
         """Create an InPost locker shipment.
 
         Required kwargs:
@@ -171,11 +178,10 @@ class InPostLockerProvider(BaseProvider):
         sending_method = kwargs.get("sending_method", "dispatch_order")
         template = kwargs.get(
             "parcel_template",
-            self._parcel_template_from_parcels(),
+            self._parcel_template_from_parcels(parcels),
         )
 
-        receiver_addr = self.shipment.order.get_receiver_address()
-        receiver_peer = self._address_to_peer(receiver_addr)
+        receiver_peer = self._address_to_peer(receiver_address)
 
         payload = {
             "receiver": dict(receiver_peer),
@@ -187,8 +193,7 @@ class InPostLockerProvider(BaseProvider):
             },
         }
 
-        sender_addr = self.shipment.order.get_sender_address()
-        sender_peer = self._address_to_peer(sender_addr)
+        sender_peer = self._address_to_peer(sender_address)
         if sender_peer:
             payload["sender"] = dict(sender_peer)
 

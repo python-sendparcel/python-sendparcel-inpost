@@ -90,7 +90,7 @@ provider = InPostCourierProvider(shipment=shipment, config={
 result = await provider.create_shipment()
 ```
 
-Parcel dimensions are taken from `shipment.order.get_parcels()` and converted
+Parcel dimensions are received as the explicit `parcels` parameter and converted
 from cm to mm for the ShipX API automatically.
 
 ### 4. Standalone ShipXClient

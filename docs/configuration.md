@@ -68,9 +68,9 @@ Door-to-door courier delivery.
 
 #### `create_shipment` parameters
 
-No required parameters beyond the shipment context. Parcel dimensions are taken
-from `shipment.order.get_parcels()` and converted from cm to mm. If no parcels
-are provided, a default 1 kg parcel is used.
+No required parameters beyond the shipment context. Parcel dimensions are
+received as the explicit `parcels` parameter and converted from cm to mm.
+If no parcels are provided, a default 1 kg parcel is used.
 
 ### Common provider methods
 

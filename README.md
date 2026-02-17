@@ -76,7 +76,7 @@ provider = InPostCourierProvider(shipment=shipment, config={
 })
 
 result = await provider.create_shipment()
-# Parcels are taken from shipment.order.get_parcels()
+# Parcels are passed as explicit parameters to create_shipment()
 # Dimensions are converted from cm to mm automatically
 ```
 
@@ -205,7 +205,7 @@ Door-to-door courier delivery.
 - **Confirmation method**: PUSH (webhook-based)
 - **Supported countries**: PL
 
-Parcel dimensions are taken from `shipment.order.get_parcels()` and converted from cm to mm for the ShipX API. If no parcels are provided, a default 1 kg parcel is used.
+Parcel dimensions are received as explicit `parcels` parameter and converted from cm to mm for the ShipX API. If no parcels are provided, a default 1 kg parcel is used.
 
 ### Common provider methods
 
