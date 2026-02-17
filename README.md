@@ -2,9 +2,9 @@
 
 [![PyPI](https://img.shields.io/pypi/v/python-sendparcel-inpost.svg)](https://pypi.org/project/python-sendparcel-inpost/)
 [![Python Version](https://img.shields.io/pypi/pyversions/python-sendparcel-inpost.svg)](https://pypi.org/project/python-sendparcel-inpost/)
-[![License](https://img.shields.io/pypi/l/python-sendparcel-inpost.svg)](https://github.com/sendparcel/python-sendparcel-inpost/blob/main/LICENSE)
+[![License](https://img.shields.io/pypi/l/python-sendparcel-inpost.svg)](https://github.com/python-sendparcel/python-sendparcel-inpost/blob/main/LICENSE)
 
-InPost ShipX API provider for the [python-sendparcel](https://github.com/sendparcel/python-sendparcel) shipping ecosystem.
+InPost ShipX API provider for the [python-sendparcel](https://github.com/python-sendparcel/python-sendparcel) shipping ecosystem.
 
 > **Alpha (0.1.0)** — API may change between minor releases. Pin your dependency if you use it in production.
 
@@ -335,9 +335,9 @@ uv run pytest --cov=sendparcel_inpost --cov-report=term-missing
 ## Credits
 
 - **Author**: Dominik Kozaczko ([dominik@kozaczko.info](mailto:dominik@kozaczko.info))
-- Built on top of [python-sendparcel](https://github.com/sendparcel/python-sendparcel) core library
+- Built on top of [python-sendparcel](https://github.com/python-sendparcel/python-sendparcel) core library
 - Integrates with the [InPost ShipX API](https://docs.inpost24.com/)
 
 ## License
 
-[MIT](https://github.com/sendparcel/python-sendparcel-inpost/blob/main/LICENSE)
+[MIT](https://github.com/python-sendparcel/python-sendparcel-inpost/blob/main/LICENSE)
