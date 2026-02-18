@@ -5,9 +5,15 @@ import ipaddress
 import logging
 from typing import Any, ClassVar
 
-from sendparcel.enums import ConfirmationMethod
+from sendparcel.enums import ConfirmationMethod, LabelFormat
 from sendparcel.exceptions import InvalidCallbackError
-from sendparcel.provider import BaseProvider
+from sendparcel.provider import (
+    BaseProvider,
+    CancellableProvider,
+    LabelProvider,
+    PullStatusProvider,
+    PushCallbackProvider,
+)
 from sendparcel.types import (
     AddressInfo,
     LabelInfo,
@@ -26,7 +32,13 @@ logger = logging.getLogger(__name__)
 INPOST_WEBHOOK_NETWORK = ipaddress.ip_network("91.216.25.0/24")
 
 
-class InPostLockerProvider(BaseProvider):
+class InPostLockerProvider(
+    BaseProvider,
+    LabelProvider,
+    PushCallbackProvider,
+    PullStatusProvider,
+    CancellableProvider,
+):
     """InPost Paczkomat locker delivery provider."""
 
     slug: ClassVar[str] = "inpost_locker"
@@ -160,7 +172,7 @@ class InPostLockerProvider(BaseProvider):
         sender_address: AddressInfo,
         receiver_address: AddressInfo,
         parcels: list[ParcelInfo],
-        **kwargs,
+        **kwargs: Any,
     ) -> ShipmentCreateResult:
         """Create an InPost locker shipment.
 
@@ -208,7 +220,7 @@ class InPostLockerProvider(BaseProvider):
             tracking_number=response.get("tracking_number", ""),
         )
 
-    async def create_label(self, **kwargs) -> LabelInfo:
+    async def create_label(self, **kwargs: Any) -> LabelInfo:
         """Fetch label PDF for the shipment."""
         shipment_id = int(self.shipment.external_id)
         label_format = kwargs.get("label_format", "Pdf")
@@ -222,16 +234,21 @@ class InPostLockerProvider(BaseProvider):
         finally:
             await client.close()
 
+        format_value: LabelFormat = (
+            LabelFormat.PDF
+            if label_format == "Pdf"
+            else LabelFormat(label_format)
+        )
         return LabelInfo(
-            format="PDF" if label_format == "Pdf" else label_format,
+            format=format_value,
             content_base64=base64.b64encode(content).decode("ascii"),
         )
 
     async def verify_callback(
         self,
-        data: dict,
-        headers: dict,
-        **kwargs,
+        data: dict[str, Any],
+        headers: dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Verify InPost webhook by source IP."""
         ip_str = headers.get("x-forwarded-for", "").split(",")[0].strip()
@@ -249,9 +266,9 @@ class InPostLockerProvider(BaseProvider):
 
     async def handle_callback(
         self,
-        data: dict,
-        headers: dict,
-        **kwargs,
+        data: dict[str, Any],
+        headers: dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Process InPost webhook payload.
 
@@ -271,7 +288,7 @@ class InPostLockerProvider(BaseProvider):
 
     async def fetch_shipment_status(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> ShipmentStatusResponse:
         """Fetch current status from ShipX API."""
         shipment_id = int(self.shipment.external_id)
@@ -289,7 +306,7 @@ class InPostLockerProvider(BaseProvider):
             status=sendparcel_status.value if sendparcel_status else None,
         )
 
-    async def cancel_shipment(self, **kwargs) -> bool:
+    async def cancel_shipment(self, **kwargs: Any) -> bool:
         """Cancel shipment via ShipX API."""
         shipment_id = int(self.shipment.external_id)
 

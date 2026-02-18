@@ -3,11 +3,17 @@
 import base64
 import ipaddress
 import logging
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
-from sendparcel.enums import ConfirmationMethod
+from sendparcel.enums import ConfirmationMethod, LabelFormat
 from sendparcel.exceptions import InvalidCallbackError
-from sendparcel.provider import BaseProvider
+from sendparcel.provider import (
+    BaseProvider,
+    CancellableProvider,
+    LabelProvider,
+    PullStatusProvider,
+    PushCallbackProvider,
+)
 from sendparcel.types import (
     AddressInfo,
     LabelInfo,
@@ -26,7 +32,13 @@ logger = logging.getLogger(__name__)
 INPOST_WEBHOOK_NETWORK = ipaddress.ip_network("91.216.25.0/24")
 
 
-class InPostCourierProvider(BaseProvider):
+class InPostCourierProvider(
+    BaseProvider,
+    LabelProvider,
+    PushCallbackProvider,
+    PullStatusProvider,
+    CancellableProvider,
+):
     """InPost courier delivery provider."""
 
     slug: ClassVar[str] = "inpost_courier"
@@ -136,11 +148,13 @@ class InPostCourierProvider(BaseProvider):
 
         return peer
 
-    def _parcels_to_shipx(self, parcels: list[ParcelInfo]) -> list[dict]:
+    def _parcels_to_shipx(
+        self, parcels: list[ParcelInfo]
+    ) -> list[dict[str, Any]]:
         """Convert parcels to ShipX parcel dicts with dimensions."""
         result = []
         for parcel in parcels:
-            shipx_parcel: dict = {}
+            shipx_parcel: dict[str, Any] = {}
 
             length = parcel.get("length_cm")
             width = parcel.get("width_cm")
@@ -170,12 +184,12 @@ class InPostCourierProvider(BaseProvider):
         sender_address: AddressInfo,
         receiver_address: AddressInfo,
         parcels: list[ParcelInfo],
-        **kwargs,
+        **kwargs: Any,
     ) -> ShipmentCreateResult:
         """Create an InPost courier shipment."""
         receiver_peer = self._address_to_peer(receiver_address)
 
-        payload: dict = {
+        payload: dict[str, Any] = {
             "receiver": dict(receiver_peer),
             "parcels": self._parcels_to_shipx(parcels),
             "service": "inpost_courier_standard",
@@ -196,7 +210,7 @@ class InPostCourierProvider(BaseProvider):
             tracking_number=response.get("tracking_number", ""),
         )
 
-    async def create_label(self, **kwargs) -> LabelInfo:
+    async def create_label(self, **kwargs: Any) -> LabelInfo:
         """Fetch label PDF for the shipment."""
         shipment_id = int(self.shipment.external_id)
         label_format = kwargs.get("label_format", "Pdf")
@@ -211,15 +225,17 @@ class InPostCourierProvider(BaseProvider):
             await client.close()
 
         return LabelInfo(
-            format="PDF" if label_format == "Pdf" else label_format,
+            format=cast(
+                LabelFormat, "PDF" if label_format == "Pdf" else label_format
+            ),
             content_base64=base64.b64encode(content).decode("ascii"),
         )
 
     async def verify_callback(
         self,
-        data: dict,
-        headers: dict,
-        **kwargs,
+        data: dict[str, Any],
+        headers: dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Verify InPost webhook by source IP."""
         ip_str = headers.get("x-forwarded-for", "").split(",")[0].strip()
@@ -237,9 +253,9 @@ class InPostCourierProvider(BaseProvider):
 
     async def handle_callback(
         self,
-        data: dict,
-        headers: dict,
-        **kwargs,
+        data: dict[str, Any],
+        headers: dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Process InPost webhook payload."""
         payload = data.get("payload", {})
@@ -255,7 +271,7 @@ class InPostCourierProvider(BaseProvider):
 
     async def fetch_shipment_status(
         self,
-        **kwargs,
+        **kwargs: Any,
     ) -> ShipmentStatusResponse:
         """Fetch current status from ShipX API."""
         shipment_id = int(self.shipment.external_id)
@@ -275,7 +291,7 @@ class InPostCourierProvider(BaseProvider):
             status=sendparcel_status.value if sendparcel_status else None,
         )
 
-    async def cancel_shipment(self, **kwargs) -> bool:
+    async def cancel_shipment(self, **kwargs: Any) -> bool:
         """Cancel shipment via ShipX API."""
         shipment_id = int(self.shipment.external_id)
 
