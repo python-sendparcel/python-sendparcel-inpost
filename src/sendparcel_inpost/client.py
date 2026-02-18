@@ -1,5 +1,6 @@
 """ShipX API async HTTP client."""
 
+from typing import Any
 from types import TracebackType
 
 import httpx
@@ -68,7 +69,7 @@ class ShipXClient:
         """Close the underlying HTTP client."""
         await self._http.aclose()
 
-    async def create_shipment(self, payload: dict) -> dict:
+    async def create_shipment(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Create a shipment via simplified flow.
 
         POST /v1/organizations/{org_id}/shipments
@@ -76,16 +77,18 @@ class ShipXClient:
         url = f"/v1/organizations/{self.organization_id}/shipments"
         response = await self._http.post(url, json=payload)
         self._raise_for_status(response)
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
-    async def get_shipment(self, shipment_id: int) -> dict:
+    async def get_shipment(self, shipment_id: int) -> dict[str, Any]:
         """Fetch shipment details.
 
         GET /v1/shipments/{shipment_id}
         """
         response = await self._http.get(f"/v1/shipments/{shipment_id}")
         self._raise_for_status(response)
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     async def get_label(
         self,
@@ -113,16 +116,17 @@ class ShipXClient:
         response = await self._http.delete(f"/v1/shipments/{shipment_id}")
         self._raise_for_status(response)
 
-    async def get_tracking(self, tracking_number: str) -> dict:
+    async def get_tracking(self, tracking_number: str) -> dict[str, Any]:
         """Fetch public tracking data (no auth required).
 
         GET /v1/tracking/{tracking_number}
         """
         response = await self._http.get(f"/v1/tracking/{tracking_number}")
         self._raise_for_status(response)
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
-    async def get_statuses(self, lang: str = "pl") -> list[dict]:
+    async def get_statuses(self, lang: str = "pl") -> list[dict[str, Any]]:
         """Fetch list of all ShipX statuses.
 
         GET /v1/statuses
@@ -132,16 +136,18 @@ class ShipXClient:
             params={"lang": lang},
         )
         self._raise_for_status(response)
-        return response.json()
+        result: list[dict[str, Any]] = response.json()
+        return result
 
-    async def get_services(self) -> list[dict]:
+    async def get_services(self) -> list[dict[str, Any]]:
         """Fetch list of all ShipX services.
 
         GET /v1/services
         """
         response = await self._http.get("/v1/services")
         self._raise_for_status(response)
-        return response.json()
+        result: list[dict[str, Any]] = response.json()
+        return result
 
     def _raise_for_status(self, response: httpx.Response) -> None:
         """Raise ShipXAPIError subclasses for non-2xx responses."""

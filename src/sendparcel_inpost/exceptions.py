@@ -1,5 +1,7 @@
 """ShipX provider exceptions."""
 
+from typing import Any
+
 from sendparcel.exceptions import CommunicationError
 
 
@@ -10,7 +12,7 @@ class ShipXAPIError(CommunicationError):
         self,
         status_code: int,
         detail: str,
-        errors: list[dict] | None = None,
+        errors: list[dict[str, Any]] | None = None,
     ) -> None:
         self.status_code = status_code
         self.detail = detail
@@ -38,6 +40,6 @@ class ShipXValidationError(ShipXAPIError):
     def __init__(
         self,
         detail: str = "Validation failed",
-        errors: list[dict] | None = None,
+        errors: list[dict[str, Any]] | None = None,
     ) -> None:
         super().__init__(status_code=422, detail=detail, errors=errors)

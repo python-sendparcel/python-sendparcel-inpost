@@ -67,6 +67,6 @@ class ShipXShipmentPayload(TypedDict, total=False):
     custom_attributes: _ShipXCustomAttributes
     reference: str
     comments: str
-    insurance: dict
-    cod: dict
+    insurance: dict[str, object]
+    cod: dict[str, object]
     additional_services: list[str]
